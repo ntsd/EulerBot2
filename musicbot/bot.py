@@ -27,6 +27,7 @@ from musicbot.player import MusicPlayer
 from musicbot.config import Config, ConfigDefaults
 from musicbot.permissions import Permissions, PermissionsDefaults
 from musicbot.utils import load_file, write_file, sane_round_int
+import musicbot.lyrics_genius as lyrics_genius
 
 from . import exceptions
 from . import downloader
@@ -1834,7 +1835,7 @@ class MusicBot(discord.Client):
             return
 
         if message.channel.is_private:
-            if not (message.author.id == self.config.owner_id and command == 'joinserver'):
+            if not (message.author.id == self.config.owner_id ):#and command == 'joinserver'):
                 await self.send_message(message.channel, 'You cannot use this bot in private messages.')
                 return
 
@@ -2011,6 +2012,45 @@ class MusicBot(discord.Client):
 
             await self.reconnect_voice_client(after)
 
+    async def cmd_guesssong(self, player, leftover_args, guesssongname):
+        """
+        Usage:
+            {command_prefix}guesssong guesssongname
+
+        guess song currently playing
+        """
+        if leftover_args:
+            guesssongname = ' '.join([guesssongname, *leftover_args])
+        def string_compare_song(guesssong, songname):
+            len_song = len(songname)
+            same_alha = 0
+            songname = songname.lower()
+            guesssong = guesssong.lower()
+            for c in guesssong:
+                for i in songname:
+                    if c == i:
+                        same_alha += 1
+                        songname.replace(c, '', 1)
+                        break
+            if len_song//same_alha < 1.75:
+                return True
+            return False
+        # print("corrected it was %s"%(player.current_entry.title))
+        if string_compare_song(guesssongname, player.current_entry.title):
+            return Response("corrected it was "+player.current_entry.title, delete_after=20)
+        return Response("not this song", delete_after=20)
+
+    async def cmd_getlyric(self, leftover_args, full_songname):
+        """
+        Usage:
+            {command_prefix}getlyric full_songname
+
+        get lyric of song
+        """
+        if leftover_args:
+            full_songname = ' '.join([full_songname, *leftover_args])
+        lyrics = lyrics_genius.search() # not done
+        return Response(lyrics)
 
 if __name__ == '__main__':
     bot = MusicBot()
