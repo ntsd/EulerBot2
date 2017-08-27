@@ -2040,17 +2040,65 @@ class MusicBot(discord.Client):
             return Response("corrected it was "+player.current_entry.title, delete_after=20)
         return Response("not this song", delete_after=20)
 
-    async def cmd_getlyric(self, leftover_args, full_songname):
+    genius_client_id, genius_client_secret, genius_client_access_token = lyrics_genius.load_credentials()
+    async def cmd_searchlyric(self, channel, author, leftover_args, term):
         """
         Usage:
-            {command_prefix}getlyric full_songname
+            {command_prefix}searchlyric term
 
-        get lyric of song
+        search lyric from term(song name or artist)
         """
         if leftover_args:
-            full_songname = ' '.join([full_songname, *leftover_args])
-        lyrics = lyrics_genius.search() # not done
-        return Response(lyrics)
+            term = ' '.join([term, *leftover_args])
+
+        search_msg = await self.send_message(channel, "Searching for lyrics...")
+        await self.send_typing(channel)
+
+        try:
+            lyrics_pages = await lyrics_genius.search(term, self.genius_client_access_token, number_page=2)
+        except Exception as e:
+            await self.safe_edit_message(search_msg, str(e), send_if_fail=True)
+            return
+        else:
+            await self.safe_delete_message(search_msg)
+
+        if not lyrics_pages:
+            return Response("No lyrics found.", delete_after=30)
+
+        def check(m):
+            return (
+                m.content.lower()[0] in 'n' or
+                # hardcoded function name weeee
+                m.content.lower().startswith('{}{}'.format(self.config.command_prefix, 'search')) or
+                m.content.lower().startswith('exit'))
+
+        for page in lyrics_pages:
+            result_message = await self.safe_send_message(channel, page)
+
+            confirm_message = await self.safe_send_message(channel,
+                                                           "Type `n` for next page or `exit`")
+            response_message = await self.wait_for_message(30, author=author, channel=channel, check=check)
+
+            if not response_message:
+                await self.safe_delete_message(result_message)
+                await self.safe_delete_message(confirm_message)
+                return Response("you found it", delete_after=30)
+
+            # They started a new search query so lets clean up and bugger off
+            elif response_message.content.startswith(self.config.command_prefix) or \
+                    response_message.content.lower().startswith('exit'):
+
+                await self.safe_delete_message(result_message)
+                await self.safe_delete_message(confirm_message)
+                return
+
+            if response_message.content.lower().startswith('n'):
+                await self.safe_delete_message(result_message)
+                await self.safe_delete_message(confirm_message)
+                await self.safe_delete_message(response_message)
+
+        return Response("Oh well :frowning:", delete_after=30)
+
 
 if __name__ == '__main__':
     bot = MusicBot()
