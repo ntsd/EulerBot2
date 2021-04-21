@@ -42,7 +42,7 @@ from .json import Json
 from .constants import VERSION as BOTVERSION
 from .constants import DISCORD_MSG_CHAR_LIMIT, AUDIO_CACHE_PATH
 
-import musicbot.lyrics_genius as lyrics_genius
+# import musicbot.lyrics_genius as lyrics_genius
 
 load_opus_lib()
 
@@ -3026,92 +3026,92 @@ class MusicBot(discord.Client):
             self.server_specific_data[guild]['availability_paused'] = True
             player.pause()
 
-    async def cmd_guesssong(self, player, leftover_args, guesssongname):
-        """
-        Usage:
-            {command_prefix}guesssong guesssongname
+    # async def cmd_guesssong(self, player, leftover_args, guesssongname):
+    #     """
+    #     Usage:
+    #         {command_prefix}guesssong guesssongname
 
-        guess song currently playing
-        """
-        if leftover_args:
-            guesssongname = ' '.join([guesssongname, *leftover_args])
-        def string_compare_song(guesssong, songname):
-            len_song = len(songname)
-            same_alha = 0
-            songname = songname.lower()
-            guesssong = guesssong.lower()
-            for c in guesssong:
-                for i in songname:
-                    if c == i:
-                        same_alha += 1
-                        songname.replace(c, '', 1)
-                        break
-            if len_song//same_alha < 1.75:
-                return True
-            return False
-        # print("corrected it was %s"%(player.current_entry.title))
-        if string_compare_song(guesssongname, player.current_entry.title):
-            return Response("corrected it was "+player.current_entry.title, delete_after=20)
-        return Response("not this song", delete_after=20)
+    #     guess song currently playing
+    #     """
+    #     if leftover_args:
+    #         guesssongname = ' '.join([guesssongname, *leftover_args])
+    #     def string_compare_song(guesssong, songname):
+    #         len_song = len(songname)
+    #         same_alha = 0
+    #         songname = songname.lower()
+    #         guesssong = guesssong.lower()
+    #         for c in guesssong:
+    #             for i in songname:
+    #                 if c == i:
+    #                     same_alha += 1
+    #                     songname.replace(c, '', 1)
+    #                     break
+    #         if len_song//same_alha < 1.75:
+    #             return True
+    #         return False
+    #     # print("corrected it was %s"%(player.current_entry.title))
+    #     if string_compare_song(guesssongname, player.current_entry.title):
+    #         return Response("corrected it was "+player.current_entry.title, delete_after=20)
+    #     return Response("not this song", delete_after=20)
 
-    genius_client_id, genius_client_secret, genius_client_access_token = lyrics_genius.load_credentials()
-    async def cmd_searchlyric(self, channel, author, leftover_args, term):
-        """
-        Usage:
-            {command_prefix}searchlyric term
+    # genius_client_id, genius_client_secret, genius_client_access_token = lyrics_genius.load_credentials()
+    # async def cmd_searchlyric(self, channel, author, leftover_args, term):
+    #     """
+    #     Usage:
+    #         {command_prefix}searchlyric term
 
-        search lyric from term(song name or artist)
-        """
-        if leftover_args:
-            term = ' '.join([term, *leftover_args])
+    #     search lyric from term(song name or artist)
+    #     """
+    #     if leftover_args:
+    #         term = ' '.join([term, *leftover_args])
 
-        search_msg = await self.send_message(channel, "Searching for lyrics...")
-        await self.send_typing(channel)
+    #     search_msg = await self.send_message(channel, "Searching for lyrics...")
+    #     await self.send_typing(channel)
 
-        try:
-            lyrics_pages = await lyrics_genius.search(term, self.genius_client_access_token, number_page=2)
-        except Exception as e:
-            await self.safe_edit_message(search_msg, str(e), send_if_fail=True)
-            return
-        else:
-            await self.safe_delete_message(search_msg)
+    #     try:
+    #         lyrics_pages = await lyrics_genius.search(term, self.genius_client_access_token, number_page=2)
+    #     except Exception as e:
+    #         await self.safe_edit_message(search_msg, str(e), send_if_fail=True)
+    #         return
+    #     else:
+    #         await self.safe_delete_message(search_msg)
 
-        if not lyrics_pages:
-            return Response("No lyrics found.", delete_after=30)
+    #     if not lyrics_pages:
+    #         return Response("No lyrics found.", delete_after=30)
 
-        def check(m):
-            return (
-                m.content.lower()[0] in 'n' or
-                # hardcoded function name weeee
-                m.content.lower().startswith('{}{}'.format(self.config.command_prefix, 'search')) or
-                m.content.lower().startswith('exit'))
+    #     def check(m):
+    #         return (
+    #             m.content.lower()[0] in 'n' or
+    #             # hardcoded function name weeee
+    #             m.content.lower().startswith('{}{}'.format(self.config.command_prefix, 'search')) or
+    #             m.content.lower().startswith('exit'))
 
-        for page in lyrics_pages:
-            result_message = await self.safe_send_message(channel, page)
+    #     for page in lyrics_pages:
+    #         result_message = await self.safe_send_message(channel, page)
 
-            confirm_message = await self.safe_send_message(channel,
-                                                           "Type `n` for next page or `exit`")
-            response_message = await self.wait_for_message(30, author=author, channel=channel, check=check)
+    #         confirm_message = await self.safe_send_message(channel,
+    #                                                        "Type `n` for next page or `exit`")
+    #         response_message = await self.wait_for_message(30, author=author, channel=channel, check=check)
 
-            if not response_message:
-                await self.safe_delete_message(result_message)
-                await self.safe_delete_message(confirm_message)
-                return Response("you found it", delete_after=30)
+    #         if not response_message:
+    #             await self.safe_delete_message(result_message)
+    #             await self.safe_delete_message(confirm_message)
+    #             return Response("you found it", delete_after=30)
 
-            # They started a new search query so lets clean up and bugger off
-            elif response_message.content.startswith(self.config.command_prefix) or \
-                    response_message.content.lower().startswith('exit'):
+    #         # They started a new search query so lets clean up and bugger off
+    #         elif response_message.content.startswith(self.config.command_prefix) or \
+    #                 response_message.content.lower().startswith('exit'):
 
-                await self.safe_delete_message(result_message)
-                await self.safe_delete_message(confirm_message)
-                return
+    #             await self.safe_delete_message(result_message)
+    #             await self.safe_delete_message(confirm_message)
+    #             return
 
-            if response_message.content.lower().startswith('n'):
-                await self.safe_delete_message(result_message)
-                await self.safe_delete_message(confirm_message)
-                await self.safe_delete_message(response_message)
+    #         if response_message.content.lower().startswith('n'):
+    #             await self.safe_delete_message(result_message)
+    #             await self.safe_delete_message(confirm_message)
+    #             await self.safe_delete_message(response_message)
 
-        return Response("Oh well :frowning:", delete_after=30)
+    #     return Response("Oh well :frowning:", delete_after=30)
 
     def voice_client_in(self, guild):
         for vc in self.voice_clients:
